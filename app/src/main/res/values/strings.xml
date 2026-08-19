@@ -8,8 +8,6 @@
     <string name="btn_stop">STOP</string>
     <string name="permission_required">Location permission is required to use this app. Please enable it in settings.</string>
     <string name="permission_denied">Permission denied. Unable to fetch location.</string>
-    <string name="calculating">calculating...</string>
-    <!-- Support legacy IDs from members if needed, or unify them -->
-    <string name="label_speed">Speed</string>
-    <string name="label_accuracy">Accuracy</string>
+    <string name="status_tracking">Tracking...</string>
+    <string name="status_stopped">Stopped</string>
 </resources>
