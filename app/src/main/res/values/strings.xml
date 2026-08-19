@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Speed Snapshot</string>
     <string name="setup_complete">App setup complete</string>
+    <string name="permission_required">Location permission is required to use this app. Please enable it in settings.</string>
+    <string name="permission_denied">Permission denied. Unable to fetch location.</string>
 </resources>
