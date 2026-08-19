@@ -11,13 +11,8 @@ Speed Snapshot is a standard Android application designed to capture speed-relat
 
 ## Project Structure
 - `app/`: Main application module.
-  - `src/main/java/com/example/speedsnapshot/`:
-    - `ui/`: UI components and Activities/Fragments.
-    - `location/`: Location-related logic and services.
-    - `permissions/`: Permission handling utilities.
-    - `utils/`: Common utility classes.
-  - `src/main/res/`: Resources like layouts, strings, and themes.
-- `gradle/libs.versions.toml`: Version catalog for dependency management.
+- `gradle/`: Gradle wrapper and configuration.
+- `gradlew`, `gradlew.bat`: Gradle wrapper scripts.
 
 ## Getting Started
 ### Prerequisites
