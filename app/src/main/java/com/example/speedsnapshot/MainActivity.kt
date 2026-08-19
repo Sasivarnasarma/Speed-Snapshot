@@ -3,13 +3,20 @@ package com.example.speedsnapshot
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.speedsnapshot.databinding.ActivityMainBinding
 import com.example.speedsnapshot.location.LocationManager
+import com.example.speedsnapshot.permissions.LocationPermissionHelper
 
 class MainActivity : AppCompatActivity(), LocationManager.LocationUpdateListener {
 
     private lateinit var binding: ActivityMainBinding
+    
+    // Member 2: Location Permission Helper
+    private lateinit var locationPermissionHelper: LocationPermissionHelper
+    
+    // Member 3: Location Manager
     private lateinit var locationManager: LocationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,12 +24,49 @@ class MainActivity : AppCompatActivity(), LocationManager.LocationUpdateListener
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize LocationManager
+        // Initialize LocationManager (Member 3)
         locationManager = LocationManager(this, this)
 
-        // Placeholder for Start/Stop integration (to be handled by other members)
-        // For demonstration, we could call startLocationUpdates if permissions are granted.
-        // But for now, we leave it for the integration member.
+        // Member 2: Initialize and handle permissions
+        setupPermissions()
+    }
+
+    /**
+     * Member 2: Setup location permission handling.
+     */
+    private fun setupPermissions() {
+        locationPermissionHelper = LocationPermissionHelper(this)
+
+        // Handle the permission result from the dialog
+        locationPermissionHelper.onPermissionResult = { isGranted ->
+            if (isGranted) {
+                onLocationPermissionGranted()
+            } else {
+                onLocationPermissionDenied()
+            }
+        }
+
+        // Initial check: if not granted, request it.
+        if (locationPermissionHelper.hasLocationPermission()) {
+            onLocationPermissionGranted()
+        } else {
+            locationPermissionHelper.requestLocationPermission()
+        }
+    }
+
+    /**
+     * Member 2: Actions to take when location permission is granted.
+     */
+    private fun onLocationPermissionGranted() {
+        binding.tvStatus.text = getString(R.string.status_ready)
+    }
+
+    /**
+     * Member 2: Actions to take when location permission is denied.
+     */
+    private fun onLocationPermissionDenied() {
+        binding.tvStatus.text = getString(R.string.permission_required)
+        Toast.makeText(this, getString(R.string.permission_denied), Toast.LENGTH_LONG).show()
     }
 
     override fun onLocationUpdate(location: Location) {
@@ -34,7 +78,7 @@ class MainActivity : AppCompatActivity(), LocationManager.LocationUpdateListener
 
     override fun onPause() {
         super.onPause()
-        // Ensure updates are stopped when the activity is not visible
+        // Ensure updates are stopped when the activity is not visible (Member 3)
         locationManager.stopLocationUpdates()
     }
 }
