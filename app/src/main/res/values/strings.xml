@@ -1,11 +1,15 @@
 <resources>
     <string name="app_name">Speed Snapshot</string>
-    <string name="setup_complete">App setup complete</string>
-    <string name="label_speed">Speed</string>
-    <string name="label_accuracy">Accuracy</string>
+    <string name="current_speed_label">Current Speed</string>
+    <string name="default_speed">0.0 km/h</string>
+    <string name="default_accuracy">Accuracy: -- m</string>
+    <string name="status_ready">Ready</string>
     <string name="btn_start">START</string>
     <string name="btn_stop">STOP</string>
-    <string name="default_speed">-- km/h</string>
-    <string name="default_accuracy">-- m</string>
+    <string name="permission_required">Location permission is required to use this app. Please enable it in settings.</string>
+    <string name="permission_denied">Permission denied. Unable to fetch location.</string>
     <string name="calculating">calculating...</string>
+    <!-- Support legacy IDs from members if needed, or unify them -->
+    <string name="label_speed">Speed</string>
+    <string name="label_accuracy">Accuracy</string>
 </resources>

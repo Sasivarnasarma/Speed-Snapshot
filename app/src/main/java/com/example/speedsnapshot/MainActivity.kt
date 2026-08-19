@@ -3,23 +3,24 @@ package com.example.speedsnapshot
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.speedsnapshot.databinding.ActivityMainBinding
+import com.example.speedsnapshot.location.LocationManager
+import com.example.speedsnapshot.permissions.LocationPermissionHelper
 import com.example.speedsnapshot.utils.SpeedUtils
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), LocationManager.LocationUpdateListener {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
     
-    // Member 3 will use this for location updates
-    private lateinit var locationCallback: LocationCallback
+    // Member 2: Location Permission Helper
+    private lateinit var locationPermissionHelper: LocationPermissionHelper
     
-    // Flag to track if updates are active, useful for lifecycle cleanup
+    // Member 3: Location Manager
+    private lateinit var locationManager: LocationManager
+
+    // Flag to track if updates are active (Member 4)
     private var isTracking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,31 +28,113 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        // Initialize LocationManager (Member 3)
+        locationManager = LocationManager(this, this)
 
-        // Initializing the location callback
-        // Member 4: Added location processing logic here
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-                for (location in locationResult.locations) {
-                    processLocation(location)
-                }
+        // Member 2: Initialize and handle permissions
+        setupPermissions()
+
+        // Set up button listeners (Member 3 & 4)
+        setupButtons()
+    }
+
+    /**
+     * Set up Start and Stop button click listeners.
+     */
+    private fun setupButtons() {
+        binding.btnStart.setOnClickListener {
+            startTracking()
+        }
+
+        binding.btnStop.setOnClickListener {
+            stopTracking()
+        }
+    }
+
+    /**
+     * Starts location tracking if permissions are granted.
+     */
+    private fun startTracking() {
+        if (locationPermissionHelper.hasLocationPermission()) {
+            val started = locationManager.startLocationUpdates()
+            if (started) {
+                isTracking = true
+                binding.tvStatus.text = getString(R.string.calculating)
+                binding.btnStart.isEnabled = false
+                binding.btnStop.isEnabled = true
+                Log.d("MainActivity", "Started tracking")
+            } else {
+                Toast.makeText(this, "Failed to start location updates", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            locationPermissionHelper.requestLocationPermission()
+        }
+    }
+
+    /**
+     * Stops location tracking and resets UI.
+     */
+    private fun stopTracking() {
+        locationManager.stopLocationUpdates()
+        isTracking = false
+        binding.tvStatus.text = getString(R.string.status_ready)
+        binding.tvSpeed.text = getString(R.string.default_speed)
+        binding.tvAccuracy.text = getString(R.string.default_accuracy)
+        binding.btnStart.isEnabled = true
+        binding.btnStop.isEnabled = false
+        Log.d("MainActivity", "Stopped tracking")
+    }
+
+    /**
+     * Member 2: Setup location permission handling.
+     */
+    private fun setupPermissions() {
+        locationPermissionHelper = LocationPermissionHelper(this)
+
+        // Handle the permission result from the dialog
+        locationPermissionHelper.onPermissionResult = { isGranted ->
+            if (isGranted) {
+                onLocationPermissionGranted()
+            } else {
+                onLocationPermissionDenied()
             }
         }
 
-        // Member 3: Will implement Start Button logic to begin location updates
-        binding.btnStart.setOnClickListener {
-            // Placeholder: Member 3 should call startLocationUpdates() here
-            // After starting, set isTracking = true
-            isTracking = true
-            binding.tvSpeed.text = getString(R.string.calculating)
+        // Initial check: if not granted, request it.
+        if (locationPermissionHelper.hasLocationPermission()) {
+            onLocationPermissionGranted()
+        } else {
+            // We don't necessarily want to pop the dialog immediately on launch
+            // if we want the user to click Start first. But the requirement says
+            // "Initial check: if not granted, request it." in Member 2's code.
+            // I'll keep it for now.
+            locationPermissionHelper.requestLocationPermission()
         }
+    }
 
-        // Member 4: Implement Stop Button logic
-        binding.btnStop.setOnClickListener {
-            stopLocationUpdates()
-        }
+    /**
+     * Member 2: Actions to take when location permission is granted.
+     */
+    private fun onLocationPermissionGranted() {
+        binding.tvStatus.text = getString(R.string.status_ready)
+        binding.btnStart.isEnabled = true
+    }
+
+    /**
+     * Member 2: Actions to take when location permission is denied.
+     */
+    private fun onLocationPermissionDenied() {
+        binding.tvStatus.text = getString(R.string.permission_required)
+        binding.btnStart.isEnabled = true // Allow them to click start to try again
+        Toast.makeText(this, getString(R.string.permission_denied), Toast.LENGTH_LONG).show()
+    }
+
+    /**
+     * Member 3: Implementation of LocationUpdateListener
+     */
+    override fun onLocationUpdate(location: Location) {
+        // Member 4: Process the location to update UI
+        processLocation(location)
     }
 
     /**
@@ -76,37 +159,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Stops continuous location updates and cleans up UI.
-     * Task assigned to Member 4.
-     */
-    private fun stopLocationUpdates() {
-        if (!isTracking) return
-
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-            .addOnCompleteListener {
-                isTracking = false
-                binding.tvSpeed.text = getString(R.string.default_speed)
-                binding.tvAccuracy.text = getString(R.string.default_accuracy)
-                Log.d("MainActivity", "Location updates stopped by user or lifecycle")
-            }
-    }
-
-    /**
-     * Handle Android Lifecycle: Stop updates when Activity is paused or stopped
-     * Task assigned to Member 4.
+     * Handle Android Lifecycle: Stop updates when Activity is paused or stopped (Member 4)
      */
     override fun onPause() {
         super.onPause()
         if (isTracking) {
-            stopLocationUpdates()
+            // Requirement says stop updates appropriately in onPause or onStop
+            // We'll stop updates but keep isTracking flag so we could potentially resume
+            // if we wanted, but the requirement just says stop.
+            locationManager.stopLocationUpdates()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isTracking) {
+            // If we were tracking before pause, resume updates
+            locationManager.startLocationUpdates()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Final safety cleanup
-        if (isTracking) {
-            stopLocationUpdates()
-        }
+        locationManager.stopLocationUpdates()
     }
 }
